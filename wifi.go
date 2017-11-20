@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -22,12 +23,12 @@ type Network struct {
 	SecurityType string
 }
 
-var templates = template.Must(template.ParseFiles("./templates/index.html", "./templates/success.html"))
-var validPath = regexp.MustCompile("^/((templates|javascripts)/([a-zA-Z0-9]+))?$")
+var views = template.Must(template.ParseFiles("./views/index.html", "./views/success.html"))
+var validPath = regexp.MustCompile("^/((views|javascripts)/([a-zA-Z0-9]+))?$")
 var networkRegex = regexp.MustCompile("(\".+\")|(WPA2?){1}")
 
-func renderTemplate(w http.ResponseWriter, templateName string, t *TemplateData) {
-	err := templates.ExecuteTemplate(w, templateName+".html", t)
+func renderTemplate(w http.ResponseWriter, viewName string, t *TemplateData) {
+	err := views.ExecuteTemplate(w, viewName+".html", t)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -79,17 +80,19 @@ func networksHandler(w http.ResponseWriter, r *http.Request) {
 func saveCredentialsHandler(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 	networkData := strings.Split(r.FormValue("networkName"), " - ")
-	networkName := networkData[0]
+	ssid := networkData[0]
 	securityType := networkData[1]
 
 	fmt.Printf("%s\n", securityType)
-	fmt.Printf("%s\n", networkName)
+	fmt.Printf("%s\n", ssid)
 	fmt.Printf("%s\n", password)
 
-	// update the wpa_configuration
-	// Check security type
+	if ssid != "" {
+		createWPASupplicant(ssid, password, securityType)
+		setClientMode()
+	}
 
-	http.Redirect(w, r, "/templates/success", http.StatusFound)
+	http.Redirect(w, r, "/views/success", http.StatusFound)
 }
 
 func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
@@ -109,9 +112,73 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.Handl
 }
 
 func main() {
-	http.HandleFunc("/templates/", makeHandler(indexHandler))
+	http.HandleFunc("/views/", makeHandler(indexHandler))
 	http.HandleFunc("/javascripts/", makeHandler(jsFileHandler))
 	http.HandleFunc("/api/networks", networksHandler)
 	http.HandleFunc("/api/save_network_credentials", saveCredentialsHandler)
 	http.ListenAndServe(":3001", nil)
+}
+
+func createWPASupplicant(ssid string, password string, securityType string) {
+	f, err := os.OpenFile("./tmp/wpa_supplicant.conf", os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	f.WriteString("ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev\n")
+	f.WriteString("update_config=1\n")
+	f.WriteString("\n")
+	f.WriteString("network={\n")
+	f.WriteString("	ssid=\"" + ssid + "\"\n")
+
+	if securityType == "WPA2" {
+		f.WriteString("	psk=\"" + password + "\"\n")
+		f.WriteString("	proto=WPA2\n")
+		f.WriteString("	key_mgmt=WPA-PSK\n")
+	} else if securityType == "WPA" {
+		f.WriteString("	proto=WPA RSN\n")
+		f.WriteString("	key_mgmt=WPA-PSK\n")
+		f.WriteString("	pairwise=CCMP PSK\n")
+		f.WriteString("	group=CCMP TKIP\n")
+		f.WriteString("	psk=\"" + password + "\"\n")
+	}
+
+	f.WriteString("}\n")
+
+	// The following 2 commands don't seem to work
+	cmd := exec.Command("sudo", "cp", "./tmp/wpa_supplicant.conf", "/etc/wpa_supplicant/")
+	fmt.Println(cmd.Output())
+	cmd = exec.Command("rm", "./tmp/wpa_supplicant.conf")
+	fmt.Println(cmd.Output())
+}
+
+func setClientMode() {
+	cmd := exec.Command("lsb_release", "-a")
+	cmdOutput, err := cmd.Output()
+
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		fmt.Println(cmdOutput)
+
+		if strings.Contains(string(cmdOutput), "jessie") {
+			fmt.Println("Jessie")
+			cmd := exec.Command("sudo", "cp", "/home/pi/configuration\\ files/interfaces.apclient", "/etc/network/interfaces")
+			fmt.Println(cmd.Output())
+		} else if strings.Contains(string(cmdOutput), "stretch") {
+			fmt.Println("stretch")
+			cmd := exec.Command("sudo", "rm", "/etc/network/interfaces")
+			fmt.Println(cmd.Output())
+		}
+	}
+
+	cmd = exec.Command("sudo", "cp", "/home/pi/configuration\\ files/rc.local.apclient", "/etc/rc.local")
+	fmt.Println(cmd.Output())
+
+	cmd = exec.Command("sudo", "cp", "/home/pi/configuration\\ files/isc-dhcp-server.apclient", "/etc/default/isc-dhcp-server")
+	fmt.Println(cmd.Output())
+
+	cmd = exec.Command("sudo", "reboot")
+	fmt.Println(cmd.Output())
 }
