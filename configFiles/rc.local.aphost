@@ -17,7 +17,7 @@ if [ "$_IP" ]; then
   printf "My IP address is %s\n" "$_IP"
 fi
 
-su -c "cd /home/pi && ./wifi &"
+su -c "cd /home/pi/pi_wifi && ./wifi &"
 
 hostapd -dd /etc/hostapd/hostapd.conf &
 

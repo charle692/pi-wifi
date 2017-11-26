@@ -17,6 +17,6 @@ if [ "$_IP" ]; then
   printf "My IP address is %s\n" "$_IP"
 fi
 
-# run script here that checks if pi is connected to a network
+su -c "cd /home/pi/pi_wifi && ./wifi &"
 
 exit 0

@@ -8,13 +8,14 @@ apt-get install isc-dhcp-server hostapd -y
 clear
 
 echo "Configuring the Raspberry Pi"
+mkdir ./tmp
 rm ./tmp/*
 sudo rm /etc/wpa_supplicant/wpa_supplicant.conf
-sudo cp ./configuration\ files/dhcpd.conf /etc/dhcp/
-sudo cp ./configuration\ files/hostapd.conf /etc/hostapd/
-sudo cp ./configuration\ files/interfaces.aphost /etc/network/interfaces
-sudo cp ./configuration\ files/isc-dhcp-server.aphost /etc/default/isc-dhcp-server
-sudo cp ./configuration\ files/rc.local.aphost /etc/rc.local
+sudo cp ./configFiles/dhcpd.conf /etc/dhcp/
+sudo cp ./configFiles/hostapd.conf /etc/hostapd/
+sudo cp ./configFiles/interfaces.aphost /etc/network/interfaces
+sudo cp ./configFiles/isc-dhcp-server.aphost /etc/default/isc-dhcp-server
+sudo cp ./configFiles/rc.local.aphost /etc/rc.local
 clear
 echo "Configuration completed"
 
