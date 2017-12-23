@@ -1,12 +1,11 @@
 # pi-wifi
-IOT like wifi configuration for the Raspberry pi
+IOT like wifi configuration for the Raspberry pi.
 
 ## Installation
-First off, your home directory will need to be `/home/pi`.
-Next you will need to clone the project from github using `git clone https://github.com/charle692/pi-wifi.git`.
-Next move into the project dir: `cd pi_wifi`.
-And finally run `sudo sh setup.sh`.
-You will be asked to reboot for changes to take affect. Once rebooted, you should see a network called `pi-wifi`.
+1. This project assumes that your home and current directory is `/home/pi`.
+2. Clone this project.
+3. Move into the project: `cd pi_wifi`.
+4. Run setup script: `sudo sh setup.sh`.
 
 ## Usage
 1. Once the Raspberry Pi has rebooted, an access point called `pi-wifi` will be created
