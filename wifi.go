@@ -17,10 +17,11 @@ type TemplateData struct {
 	Title string
 }
 
-// Network - Contains the data for a network
+// Network - Contains the SSID, password and security type of the network
 type Network struct {
-	SSID         string
-	SecurityType string
+	Password     string `json:"password"`
+	SSID         string `json:"ssid"`
+	SecurityType string `json:"securityType"`
 }
 
 var views = template.Must(template.ParseFiles("./views/index.html", "./views/success.html"))
@@ -83,16 +84,34 @@ func saveCredentialsHandler(w http.ResponseWriter, r *http.Request) {
 	ssid := networkData[0]
 	securityType := networkData[1]
 
-	fmt.Printf("%s\n", securityType)
-	fmt.Printf("%s\n", ssid)
-	fmt.Printf("%s\n", password)
-
 	if ssid != "" {
 		createWPASupplicant(ssid, password, securityType)
 		setClientMode()
 	}
 
 	http.Redirect(w, r, "/views/success", http.StatusFound)
+}
+
+func saveNetworkCredentials(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	network := &Network{}
+	if err := decoder.Decode(network); err != nil {
+		fmt.Println(err)
+	}
+
+	if network.SSID != "" {
+		createWPASupplicant(network.SSID, network.Password, network.SecurityType)
+		setClientMode()
+	}
+
+	json, err := json.Marshal(network)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(json)
 }
 
 func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
@@ -122,7 +141,8 @@ func main() {
 		http.HandleFunc("/views/", makeHandler(indexHandler))
 		http.HandleFunc("/javascripts/", makeHandler(jsFileHandler))
 		http.HandleFunc("/api/networks", networksHandler)
-		http.HandleFunc("/api/save_network_credentials", saveCredentialsHandler)
+		http.HandleFunc("/api/save_network_credentials", saveNetworkCredentials)
+		http.HandleFunc("/save_network_credentials", saveCredentialsHandler)
 		http.ListenAndServe(":3001", nil)
 	}
 }
