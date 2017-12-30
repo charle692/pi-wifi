@@ -1,13 +1,15 @@
 <h1>{{.Title}}</h1>
 
-<form action="/api/save_network_credentials" method="POST">
+<form action="/save_network_credentials" method="POST">
   <div>
-    <label for="network-selector">WIFI Name:</label><br/>
+    <label for="network-selector">WIFI Name:</label>
+    <br/>
     <select id="network-selector" name="networkName"></select>
     <a href="#" id="refresh-network-list">Refresh</a>
     <br/>
     <br/>
-    <label for="password">WIFI Password:</label><br/>
+    <label for="password">WIFI Password:</label>
+    <br/>
     <input type="password" name="password" id="password" />
     <br/>
     <br/>

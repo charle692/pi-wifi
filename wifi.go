@@ -99,9 +99,11 @@ func saveNetworkCredentials(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 	}
 
+	fmt.Printf("Network: %v\n", network)
+
 	if network.SSID != "" {
-		createWPASupplicant(network.SSID, network.Password, network.SecurityType)
-		setClientMode()
+		defer setClientMode()
+		defer createWPASupplicant(network.SSID, network.Password, network.SecurityType)
 	}
 
 	json, err := json.Marshal(network)
