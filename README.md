@@ -4,7 +4,7 @@ IOT like wifi configuration for the Raspberry pi.
 ## Installation
 1. This project assumes that your home and current directory is `/home/pi`.
 2. Clone this project.
-3. Move into the project: `cd pi_wifi`.
+3. Move into the project: `cd pi-wifi`.
 4. Run setup script: `sudo sh setup.sh`.
 
 ## Usage
