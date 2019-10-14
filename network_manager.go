@@ -59,15 +59,15 @@ func setAccessPointMode() {
 	fmt.Println(cmd.Output())
 }
 
-func createWPASupplicant(ssid string, password string, securityType string) {
-	f, err := os.OpenFile("./tmp/wpa_supplicant.conf", os.O_WRONLY|os.O_CREATE, 0600)
-	if err != nil {
-		log.Fatal(err)
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
 	}
-	defer f.Close()
+	return !info.IsDir()
+}
 
-	f.WriteString("ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev\n")
-	f.WriteString("update_config=1\n")
+func writeNetwork(ssid string, password string, securityType string, f *os.File) {
 	f.WriteString("\n")
 	f.WriteString("network={\n")
 	f.WriteString("	ssid=\"" + ssid + "\"\n")
@@ -85,10 +85,23 @@ func createWPASupplicant(ssid string, password string, securityType string) {
 	}
 
 	f.WriteString("}\n")
+}
 
-	// The following 2 commands don't seem to work
+func createWPASupplicant(ssid string, password string, securityType string) {
+	f, err := os.OpenFile("./tmp/wpa_supplicant.conf", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	if fileExists("./tmp/wpa_supplicant.conf") {
+		f.WriteString("ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev\n")
+		f.WriteString("update_config=1\n")
+		writeNetwork(ssid, password, securityType, f)
+	} else {
+		writeNetwork(ssid, password, securityType, f)
+	}
+
 	cmd := exec.Command("sudo", "cp", "./tmp/wpa_supplicant.conf", "/etc/wpa_supplicant/")
-	fmt.Println(cmd.Output())
-	cmd = exec.Command("rm", "./tmp/wpa_supplicant.conf")
 	fmt.Println(cmd.Output())
 }
